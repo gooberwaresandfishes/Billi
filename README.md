@@ -1,7 +1,10 @@
 # Billi
 
 ## Setup
-Extract and run Billi.exe
+Extract the zip.
+If you're on pc and have python, run main.py
+If you're on pc and dont have python run main.exe (the exe might flag as a virus so you may need to add an exception to your antivirus).
+If you're on mobile run main.py with pydroid
 
 ## Controls
 - Use WASD to move or press on sides of the screen.
