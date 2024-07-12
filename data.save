@@ -1,0 +1,71 @@
+{
+  "cats": [
+    [
+      150,
+      175,
+      "RICHARD",
+      "resources/cat1.png",
+      50,
+      50,
+      50,
+      0,
+      10,
+      10,
+      10,
+      {
+        "health": [
+          "wow i feeel so helty!",
+          "im boutta die bruh"
+        ],
+        "happiness": [
+          "yippeeee im so happy!",
+          "i think im depressed"
+        ],
+        "hunger": [
+          "im so full!",
+          "im so hungry i could eat a horse"
+        ],
+        "hoariness": [
+          "damn im old",
+          "im so young!"
+        ],
+        "handsomeness": [
+          "this bowtie lookin good",
+          "i wish i had a bowtie to look more snazzy"
+        ],
+        "hardiness": [
+          "im ready to run a marathon",
+          "im quite unfit"
+        ],
+        "headsmarts": [
+          "my brian is so beeeg",
+          "i failed my last test"
+        ]
+      }
+    ]
+  ],
+  "items": [
+    [
+      "hamburger",
+      30,
+      75,
+      50,
+      "resources/hamburger.png",
+      0,
+      10,
+      15,
+      0,
+      0,
+      -5,
+      0
+    ]
+  ],
+  "buildings": {
+    "gym": 999999,
+    "school": 999999,
+    "barber": 999999
+  },
+  "slept": 0,
+  "tips": [],
+  "money" : 200
+}
