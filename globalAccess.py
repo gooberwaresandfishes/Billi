@@ -2,8 +2,13 @@ import pygame
 import entities
 import states
 
-#  health, happiness, hunger, hoariness, handsomeness, hardiness, headsmarts, sayings):
+# save
+saveDict = {}
 
+# money
+money = 0
+
+# cats stats
 cats = [
 ("RICHARD", "resources/cat1.png", 50, 50, 50, 0, 10, 10, 10,
     {
@@ -40,7 +45,17 @@ cats = [
 )
 ]
 
+# resources 
+bubbleImage = pygame.image.load("resources/bubble.png")
 
+# sounds
+pygame.mixer.init()
+meow = pygame.mixer.Sound("resources/meow.mp3")
+kaching = pygame.mixer.Sound("resources/money.mp3")
+nom = pygame.mixer.Sound("resources/nom.mp3")
+womp = pygame.mixer.Sound("resources/womp.mp3")
+
+# useful functions
 def renderMultilineFont(text, font):
     rendered = []
     for line in text:
@@ -54,13 +69,87 @@ def blitMultilineFont(rendered, screen, x, y, gap):
         screen.blit(text, (x, y + distance))
         distance += gap
 
-bubbleImage = pygame.image.load("resources/bubble.png")
+# tips
+tips = [
+    entities.Tip(
+        '''
+        Welcome to Billi!
+        '''
+    ),
+    entities.Tip(
+        '''
+        HOW TO PLAY:
+        - Your objective is to take care of your cats.
+        - Feed them items to maintain their stats.
+        - Buy items from shops using money.
+        - Earn money by working in buildings.
+        '''
+    ),
+    entities.Tip(
+        '''
+        CATS:
+        - You start with 1 cat.
+        - There are 2 more to find, scattered in the map
+        - Cat's stats decrease over time.
+        - Hoariness means age and instead increases over time
+        - When you exit, your cats sleep
+        - When cats sleep they lose stats slower.
+        - Low stats lead to health damage (or high hoariness)
+        - Sleeping cats avoid health damage
+        - If a cat reaches 0 health it dies
+        - dead cats respawn outside
+        - Click a cat to check its condition.
+        '''
+    ),
+    entities.Tip(
+        '''
+        ITEMS:
+        - Items boost your cat's stats.
+        - Drag items onto a cat to feed them.
+        '''
+    ),
+    entities.Tip(
+        '''
+        SHOPS:
+        - There are 3 shops in the map (one in the alley).
+        - Visit shops to purchase items.
+        - Simply walk into a shop and buy.
+        '''
+    ),
+    entities.Tip(
+        '''
+        WORK:
+        - There are 3 buildings on the map.
+        - Enter buildings to work or use services.
+        - Using upgrades skills
+        - Working earns money based on skills.
+        - Any action is available once daily.
+        '''
+    ),
+    entities.Tip(
+        '''
+        WORLD:
+        - Click a door to exit the house.
+        - Click a cat to accompany you before leaving.
+        - Use WASD to move or press on sides of the screen.
+        - Enter buildings through black doors.
+        '''
+    ),
+    entities.Tip(
+        '''
+        SAVE:
+        - Press 'Esc' or EXIT at home to exit the game.
+        - Press 'F' or SAVE at home save your progress.
+        - Press LOAD in the main menu to load your save.
+        '''
+    ),
+    entities.Tip(
+        '''
+        IMPORTANT:
+        - MAKE SURE TO EXIT THE GAME OR STATS WILL DRAIN.
+        - MAKE SURE TO SAVE BEFORE EXITING.
+        - Have fun exploring Billi!
+        '''
+    )
+]
 
-money=0
-pygame.mixer.init()
-meow = pygame.mixer.Sound("resources/meow.mp3")
-kaching = pygame.mixer.Sound("resources/money.mp3")
-nom = pygame.mixer.Sound("resources/nom.mp3")
-womp = pygame.mixer.Sound("resources/womp.mp3")
-
-saveDict = {}
