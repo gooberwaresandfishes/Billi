@@ -67,5 +67,10 @@
   },
   "slept": 0,
   "tips": [],
-  "money" : 200
+  "money" : 200,
+  "practice": {
+    "handsomeness": 1,
+    "hardiness": 1,
+    "headsmarts": 1
+  }
 }

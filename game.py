@@ -1,4 +1,5 @@
 import pygame
+import time
 
 # the main class that consists of mostly generic functionality
 class Game():
@@ -23,6 +24,7 @@ class Game():
         
         # set running to true
         self.running = True
+        self.dt = 1
         
         # initalise pygame
         pygame.init()
@@ -55,12 +57,21 @@ class Game():
         # setup FPS
         clock = pygame.time.Clock()
         FPS = 60
+        prev_time = time.time()
         
         # loop while running
         while self.running:
             
             # if the game updated too fast, wait so it wont go over 60 FPS
             clock.tick(60)
+            
+            # delta time stuff
+            
+            
+
+            now = time.time()
+            self.dt = now - prev_time
+            prev_time = now
             
             # state loop
             

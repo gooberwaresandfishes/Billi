@@ -1,4 +1,5 @@
 import pygame
+import gif_pygame
 import random
 
 from game import Game
@@ -40,14 +41,15 @@ class Image(Entity):
     def init(self):
         # load and size image
         self.image = pygame.image.load(self.imagePath)
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.image = pygame.transform.scale(self.image, (self.width-1, self.height))
         
         self.xMove = 0
         self.yMove = 0
     
     def update(self):
         # resize image if width and height changed
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        if not(self.image.get_height() == self.height and self.image.get_width() == self.width):
+            self.image = pygame.transform.scale(self.image, (self.width, self.height)).convert_alpha()
         
         # increase coordinates by move
         self.x += self.xMove
@@ -98,7 +100,85 @@ class ClickableImage(Image):
         
         # if mouse is up it is not help
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            self.isHeld = False           
+            self.isHeld = False  
+            
+# initialise shop instances: health, happiness, hunger, hoariness, handsomeness, hardiness, headsmarts
+class Trophy(ClickableImage):
+    
+    def init(self):
+        super().init()
+        
+        self.level = 1
+        self.currentClicks = 0
+        self.clickMax = 10 + 90 // self.level
+        self.cost = 100 * (5**self.level)
+        
+        # initialise font stuff
+        pygame.font.init()
+
+        self.statsFont = pygame.font.Font("resources/Cascadia Code.ttf", 15)
+        
+        # text stuff
+        self.statsTexts = globalAccess.renderMultilineFont((
+            f"clicks: {self.currentClicks}/{self.clickMax}",
+            f"cost: {self.cost}",
+            f"level: {self.level}"
+
+        ), self.statsFont)
+        
+    def update(self):
+        super().update()
+        
+        self.clickMax = 10 + 90 // self.level
+        self.cost = 100 * (5**self.level)
+        
+        if self.isClicked and states.Outside.instance.player.imagePath == "resources/icon.png":
+           Game.instance.currentState.entities.append(Tip("You must have a cat selected to practice!"))
+           return
+           
+        
+        
+
+        for cat in states.Home.instance.ownedCats:
+            if cat.imagePath == states.Outside.instance.player.imagePath:
+                selectedCat = cat
+        
+        
+        
+        if self.isClicked:
+            self.currentClicks += 1
+            
+        if self.currentClicks >= self.clickMax:
+            self.currentClicks = 0
+            
+            if self.imagePath == "resources/treadmill.png":
+                selectedCat.changeStats(0,0,0,0,0,1,0)
+                Game.instance.currentState.entities.append(
+                    Tip(f"You have gained 1 hardiness!\n you now have {selectedCat.hardiness} hardiness")
+                )
+            elif self.imagePath == "resources/mirror.png":
+                selectedCat.changeStats(0,0,0,0,1,0,0)
+                Game.instance.currentState.entities.append(
+                    Tip(f"You have gained 1 handsomeness!\n you now have {selectedCat.handsomeness} handsomeness")
+                )
+            elif self.imagePath == "resources/bookshelf.png":
+                selectedCat.changeStats(0,0,0,0,0,0,1)
+                Game.instance.currentState.entities.append(
+                    Tip(f"You have gained 1 headsmarts!\n you now have {selectedCat.headsmarts} headsmarts")
+                )
+            
+        # text stuff
+        self.statsTexts = globalAccess.renderMultilineFont((
+            f"clicks: {self.currentClicks}/{self.clickMax}",
+            f"cost: {self.cost}",
+            f"level: {self.level}"
+
+        ), self.statsFont)    
+        
+    def render(self):
+        super().render()
+        
+        globalAccess.blitMultilineFont(self.statsTexts, Game.instance.screen, self.x, 500, 20)    
 
 # tip class for popups
 class Tip(ClickableImage):
@@ -231,7 +311,7 @@ class Cat(ClickableImage):
             # tell the player the cat has died
             if Game.instance.currentState == states.Home.instance:
                 Game.instance.currentState.tips.append(
-                    Tip(f"{self.name} has died!\ndead cats respawn outside when you enter home.")
+                    Tip(f"{self.name} has died!\ndead cats respawn in the maze or outside")
                 )
                 
             else:
@@ -251,30 +331,16 @@ class Cat(ClickableImage):
                     
                     states.Outside.instance.player.imagePath = states.Home.instance.ownedCats[0].imagePath
                 
-                # if there are no cats left show secret easter egg billi!!! O:
+                # if there are no cats left show secret easter egg billi!!! O: (not really a secret or an easter egg)
                 else:
                     
                     states.Outside.instance.player.imagePath = "resources/icon.png"
                     
                 states.Outside.instance.player.image = pygame.image.load(states.Outside.instance.player.imagePath)
         
-        # time passed increases
-        self.timePassed += 1
+       
         
-        # if roughly 10 minutes has passed reduce stats
-        if self.timePassed > 18000:
-            
-            self.changeStats(0, -2, -2, 0, -1, -1, -1)
-            
-            # for every non-health attribute at 0 reduce health by 1
-            for key, value in self.getAttributeDict().items():
-                if (not key == "health") and\
-                ((not(key == "hoariness") and value < 1) or (key == "hoariness" and value > 100)):
-                    
-                    self.changeStats(-1, 0, 0, 0, 0, 0, 0 )
-            
-            # reset time passed
-            self.timePassed = 0
+        
         
         # increase or reset bubble time
         self.bubbleTime = 0 if self.bubbleTime > 200 else self.bubbleTime + 1 if self.bubbleTime > 0 else 0
@@ -340,6 +406,54 @@ class Cat(ClickableImage):
         self.hardiness = int(self.hardiness + hardiness if self.hardiness + hardiness > 0 else 0) # athleticism
         self.headsmarts = int(self.headsmarts + headsmarts if self.headsmarts + headsmarts > 0 else 0) # intelligence    
         
+        if self.health <= 0:
+            Game.instance.currentState = states.Home.instance
+            
+            states.Outside.instance.player.x = 300
+            states.Outside.instance.player.y = 725
+            
+            states.Path.instance.player.x = 550
+            states.Path.instance.player.y = 550
+            
+            states.Maze.instance.player.x = 25
+            states.Maze.instance.player.y = 1510
+            return
+            
+        if health:
+            Game.instance.currentState.entities.append(Tip(f"You have {"lost" if health < 0 else "gained"} {abs(health)}\
+            health!\n you now have {self.health} health"))
+            
+        if self.handsomeness >= 1000 and not("handsomeness" in states.TrophyRoom.instance.trophies):
+            try:
+                Game.instance.currentState.tips.append(Tip(f"You unlocked the handsomeness trophy!"))
+            except:
+                Game.instance.currentState.entities.append(Tip(f"You unlocked the handsomeness trophy!"))
+                
+            states.TrophyRoom.instance.entities.append(Image(693,179, False, 141, 77, "resources/bowtietrophy.png"))
+                
+            states.TrophyRoom.instance.trophies.append("handsomeness")
+            
+        if self.hardiness >= 1000 and not("hardiness" in states.TrophyRoom.instance.trophies):
+            
+            try:
+                Game.instance.currentState.tips.append(Tip(f"You unlocked the hardiness trophy!"))
+            except:
+                Game.instance.currentState.entities.append(Tip(f"You unlocked the hardiness trophy!"))
+                
+            states.TrophyRoom.instance.entities.append(Image(136,168, False, 146, 85, "resources/dumbelltrophy.png"))
+                
+            states.TrophyRoom.instance.trophies.append("hardiness")
+        
+        if self.headsmarts >= 1000 and not("headsmarts" in states.TrophyRoom.instance.trophies):
+            try:
+                Game.instance.currentState.tips.append(Tip(f"You unlocked the headsmarts trophy!"))
+            except:
+                Game.instance.currentState.entities.append(Tip(f"You unlocked the headsmarts trophy!"))
+                
+            states.TrophyRoom.instance.entities.append(Image(437,168, False, 107, 90, "resources/booktrophy.png"))
+                
+            states.TrophyRoom.instance.trophies.append("headsmarts")
+                
 # item in invetory
 class Item(ClickableImage):
     
@@ -405,8 +519,11 @@ class Item(ClickableImage):
         
 class Player(Image):
     
-    def __init__(self, x, y):
-        
+    def __init__(self, x, y, backX, backY, backWidth, backHeight):
+        self.backX = backX
+        self.backY = backY
+        self.backWidth = backWidth
+        self.backHeight = backHeight
         super().__init__(x, y, False, 50,70, "resources/icon.png")
         
     def init(self):
@@ -419,20 +536,44 @@ class Player(Image):
         self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
         
         # do not allow player to get out the map
-        if self.x < 0:
-            self.x = 0
-        elif self.x > 1900-self.width:
-            self.x =  1900-self.width
+        if self.x < self.backX:
+            self.x = self.backX
+        elif self.x > self.backWidth-self.width:
+            self.x =  self.backWidth-self.width
         
-        if self.y < 0:
-            self.y = 0
-        elif self.y >  1200-self.height:
-            self.y = 1200-self.height
+        if self.y < self.backY:
+            self.y = self.backY
+        elif self.y >  self.backHeight-self.height:
+            self.y = self.backHeight-self.height
         
         # handle collisions with barriers
         self.handleCollisions()
             
     def handleCollisions(self):
+        
+        if Game.instance.currentState == states.Maze.instance:
+            self.x -= self.xMove
+            self.y -= self.yMove
+            mazeMap = Game.instance.currentState.mazeMap
+
+            if not(self.xMove == 0):  # Moving horizontally
+                tx = (self.x + self.xMove + (self.width if self.xMove > 0 else 0)) // 100
+                
+                if (not mazeMap[tx][self.y // 100]) and \
+                   (not mazeMap[tx][(self.y+ self.height) // 100]):
+                       
+                    self.x += self.xMove
+            
+            if not(self.yMove == 0):  # Moving vertically
+                ty = (self.y + self.yMove + (self.height if self.yMove > 0 else 0)) // 100
+                
+                if (not mazeMap[self.x // 100][ty]) and \
+                   (not mazeMap[(self.x+ self.width) // 100][ty]):
+                       
+                    self.y += self.yMove
+             
+            return
+        
     
         # do not allow player to pass barriers
         for entity in Game.instance.currentState.entities:
@@ -459,14 +600,14 @@ class Player(Image):
             # move in the direction based on WASD
             
             if event.key == pygame.K_w:
-                self.yMove = -3
+                self.yMove = -4*Game.instance.dt*60
             elif event.key == pygame.K_s:
-                self.yMove = 3
+                self.yMove = 4*Game.instance.dt*60
                 
             if event.key == pygame.K_a:
-                self.xMove = -3
+                self.xMove = -4*Game.instance.dt*60
             elif event.key == pygame.K_d:
-                self.xMove = 3
+                self.xMove = 4*Game.instance.dt*60
         
         # if key is unpressed, stop moving in that direction
         elif event.type == pygame.KEYUP:
@@ -488,13 +629,17 @@ class Player(Image):
             position = pygame.mouse.get_pos()
             
             # if mouse is pressed on a far side of the screen it will go in that direction
-            self.yMove = -3 if position[1] < 200 else 3 if position[1] > 400 else 0
-            self.xMove = -3 if position[0] < 400 else 3 if position[0] > 600 else 0
+            self.yMove = -4*Game.instance.dt*60 if position[1] < 200 else 4*Game.instance.dt*60 if position[1] > 400 else 0
+            self.xMove = -4*Game.instance.dt*60 if position[0] < 400 else 4*Game.instance.dt*60 if position[0] > 600 else 0
         
         # if mouse is unpressed stop moving
         elif event.type == pygame.MOUSEBUTTONUP  and event.button == 1:
             self.xMove = 0
-            self.yMove = 0      
+            self.yMove = 0
+            
+        
+        self.xMove = round(self.xMove)
+        self.yMove = round(self.yMove)
     
     def render(self):
         if self.isHidden:
@@ -562,6 +707,7 @@ class Door(Entity):
         
             # move player away from door
             Game.instance.currentState.player.y -= 8*Game.instance.currentState.player.yMove
+            Game.instance.currentState.player.x -= 8*Game.instance.currentState.player.xMove
             
             # make player still
             Game.instance.currentState.player.xMove = 0
@@ -623,4 +769,194 @@ class Collectible(RoamImage):
             Game.instance.currentState.entities.append(
                 Tip(f"you got {states.Home.instance.ownedCats[-1].name}!\n meet him at home!")
             )
+# items: health, happiness, hunger, hoariness, handsomeness, hardiness, headsmarts
+# item to be collected  
+class CollectibleItem(RoamImage):
+
+    def __init__(self, x, y):
+        self.item = random.choice(
+        (
+        ("air", 10, 40, 75, "resources/air.png", 0, 0, 0, 0, 0, 0, 0),
+        ("skipping rope", 10, 50, 50, "resources/skipping rope.png", 0, 0, 0, 0, 0, 1, 0),
+        ("book", 10, 50, 50, "resources/book.png", 0, 0, 0, 0, 0, 0, 1),
+        ("comb", 10, 50, 50, "resources/comb.png", 0, 0, 0, 0, 1, 0, 0)
+        )
+        
+        )
+        self.width = self.item[2]
+        self.height = self.item[3]
+        self.x = x
+        self.y = y
+                    
+                    
+        
+        super().__init__(self.x, self.y, False, self.width, self.height, self.item[4])
+        
+    def init(self):
+        super().init()
+        
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        self.xMove = 0
+        self.yMove = 0
+    
+    def update(self):
+        super().update()
+
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        # if there is a collision add to inventory and remove from map
+        if self.rectangle.colliderect(Game.instance.currentState.player.rectangle):
             
+           
+            
+            # add to inventory
+            states.Home.inventory.append(Item(*self.item))
+            
+            # add new item
+            Game.instance.currentState.addItem()
+            
+            # remove self
+            Game.instance.currentState.entities.remove(self)
+            
+             # add tip
+            Game.instance.currentState.entities.append(Tip(f"you got {self.item[0]}!\n it was added to your inventory!"))
+
+class Car(Entity):
+    
+    def __init__(self, x):
+        self.ogX = x
+        self.x = x
+        self.y = random.randint(500, 600)
+        self.width = 100
+        self.height = 100
+        self.imagePath = "resources/car.gif"
+        
+        super().__init__()
+        
+    def init(self):
+        self.image = gif_pygame.load(self.imagePath)
+        
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.xMove = 0
+        
+    def update(self):
+        self.xMove = Game.instance.dt*60
+        self.x += self.xMove
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        if self.rectangle.colliderect(Game.instance.currentState.player.rectangle):
+            globalAccess.crash.play()
+            Game.instance.currentState.entities.remove(self)
+            Game.instance.currentState.entities.append(Car(self.ogX))
+            for cat in states.Home.instance.ownedCats:
+                if cat.imagePath == Game.instance.currentState.player.imagePath:
+                    cat.changeStats(-30,0,0,0,0,0,0)
+        
+        if self.x > 2500:
+            Game.instance.currentState.entities.remove(self)
+            Game.instance.currentState.entities.append(Car(self.ogX))
+            
+        
+    def render(self, x, y):
+        self.image.render(Game.instance.screen, (self.x - x, self.y - y))
+        
+class Clock(RoamImage):
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        
+        super().__init__(self.x, self.y, False, 54, 75, "resources/clock.png")
+        
+    def init(self):
+        super().init()
+        
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        self.xMove = 0
+        self.yMove = 0
+    
+    def update(self):
+        super().update()
+
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        # if there is a collision add to inventory and remove from map
+        if self.rectangle.colliderect(Game.instance.currentState.player.rectangle):
+            
+            
+            
+            # add new item
+            Game.instance.currentState.entities.append(Clock(*Game.instance.currentState.getLoc()))
+            
+            # remove self
+            Game.instance.currentState.entities.remove(self)
+            
+             # add tip
+            Game.instance.currentState.entities.append(Tip(f"you got the clock! time has moved forward by 6 hours!\n(except for the currently equipped cat)"))
+            
+            states.Building.gymTime += 21600
+            states.Building.barberTime += 21600
+            states.Building.schoolTime += 21600
+            
+            # change the cat's stats based on how long they were away for
+            for cat in states.Home.ownedCats:
+                if cat.imagePath == Game.instance.currentState.player.imagePath:
+                    continue
+                    ss
+                # time slept in hours
+                slept = 21600 //7200
+                
+                # reduce stats
+                cat.changeStats(0, -2*slept, -2*slept, slept, -slept, -slept, -slept)
+
+class Ghost(RoamImage):
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        
+        super().__init__(self.x, self.y, False, 54, 75, "resources/ghost.png")
+        
+    def init(self):
+        super().init()
+        
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        self.xMove = 0
+        self.yMove = 0
+    
+    def update(self):
+        super().update()
+        
+        move = Game.instance.dt*60
+        
+        if states.Maze.instance.player.x > self.x:
+            
+            self.x += move
+        else:
+            self.x -= move
+        if states.Maze.instance.player.y > self.y:
+            
+            self.y += move
+        else:
+            self.y -= move
+
+        self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        # if there is a collision add to inventory and remove from map
+        if self.rectangle.colliderect(Game.instance.currentState.player.rectangle):
+            globalAccess.crash.play()
+            
+            
+            # add new item
+            Game.instance.currentState.entities.append(Ghost(*Game.instance.currentState.getLoc()))
+            
+            # remove self
+            Game.instance.currentState.entities.remove(self)
+            
+            for cat in states.Home.instance.ownedCats:
+                if cat.imagePath == Game.instance.currentState.player.imagePath:
+                    cat.changeStats(-40,0,0,0,0,0,0)
+                    return

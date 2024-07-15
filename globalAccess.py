@@ -1,6 +1,7 @@
 import pygame
 import entities
 import states
+import gif_pygame
 
 # save
 saveDict = {}
@@ -47,6 +48,7 @@ cats = [
 
 # resources 
 bubbleImage = pygame.image.load("resources/bubble.png")
+seaImage = gif_pygame.load("resources/sea.gif")
 
 # sounds
 pygame.mixer.init()
@@ -54,6 +56,7 @@ meow = pygame.mixer.Sound("resources/meow.mp3")
 kaching = pygame.mixer.Sound("resources/money.mp3")
 nom = pygame.mixer.Sound("resources/nom.mp3")
 womp = pygame.mixer.Sound("resources/womp.mp3")
+crash = pygame.mixer.Sound("resources/car.mp3")
 
 # useful functions
 def renderMultilineFont(text, font):
@@ -137,6 +140,24 @@ tips = [
     ),
     entities.Tip(
         '''
+        PRACTICE:
+        - Click the arrow button in the corner switch rooms.
+        - The room next to you is the practice room
+        - Here you can increase the stats of your cats.
+        - You can click and upgrade to reduce clicks required.
+        '''
+    ),
+    entities.Tip(
+        '''
+        MAZE:
+        - A maze is located following the road to the right
+        - It contains many items and collectibles such as...
+        - Cats, clocks (to skip time forward), items
+        - there is also a ghost that will chase and do damage
+        '''
+    ),
+    entities.Tip(
+        '''
         SAVE:
         - Press 'Esc' or EXIT at home to exit the game.
         - Press 'F' or SAVE at home save your progress.
@@ -153,3 +174,28 @@ tips = [
     )
 ]
 
+from PIL import Image
+
+def convert_image_to_2d_array(image_path):
+    # Load the image
+    image = Image.open(image_path)
+
+    # Convert the image to grayscale
+    image = image.convert('L')
+
+    # Get image dimensions
+    width, height = image.size
+
+    # Convert to 1s and 0s
+    binary_image = []
+    for x in range(height):
+        row = []
+        for y in range(width):
+            pixel = image.getpixel((x, y))
+            # Assuming 0 is black and 255 is white
+            row.append(1 if pixel == 0 else 0)
+        binary_image.append(row)
+    
+    print(binary_image)
+    
+    return binary_image

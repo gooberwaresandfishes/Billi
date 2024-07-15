@@ -5,6 +5,8 @@ import time
 from game import Game
 import globalAccess
 import entities
+import gif_pygame
+import random
 
 # base class for states
 class State():
@@ -28,9 +30,30 @@ class State():
             # dont update if you aren't the state anymore
             if not(Game.instance.currentState == self):
                 return
+                
+        # im so sorry for this god awful solution
+        for cat in Home.ownedCats:
+            
+            # if roughly 5 minutes has passed reduce stats
+            if cat.timePassed > 18000:
+                cat.changeStats(0, -2, -2, 0, -1, -1, -1)
+                
+
+                # for every non-health attribute at 0 reduce health by 1
+                for key, value in cat.getAttributeDict().items():
+                    if (not key == "health") and\
+                    ((not(key == "hoariness") and value < 1) or (key == "hoariness" and value > 100)):
+                        
+                        cat.changeStats(-1, 0, 0, 0, 0, 0, 0 )
+                
+                # reset time passed
+                cat.timePassed = 0
+            
+            # time passed increases
+            cat.timePassed += 1
     
     def render(self):
-    
+
         # loop through and render all entities
         for entity in self.entities:
             entity.render()
@@ -91,8 +114,20 @@ class State():
             # save the money
             globalAccess.saveDict["money"] = int(globalAccess.money)
             
+            # save practice
+            
+            globalAccess.saveDict["practice"]["hardiness"] =  PracticeRoom.instance.entities[3].level
+            globalAccess.saveDict["practice"]["headsmarts"] = PracticeRoom.instance.entities[4].level
+            globalAccess.saveDict["practice"]["handsomeness"] = PracticeRoom.instance.entities[5].level
+            
             # dump the json
             json.dump(globalAccess.saveDict, save)
+        
+        
+        try:
+            Game.instance.currentState.tips.append(entities.Tip("saved successfully!"))
+        except:
+            Game.instance.currentState.entities.append(entities.Tip("saved successfully!"))
     
     # load the json
     def load(self, file):
@@ -102,7 +137,9 @@ class State():
             
             # save to the dictionary
             globalAccess.saveDict = json.loads(save.read())
-            
+
+
+     
 # main menu
 class Main(State):
 
@@ -165,7 +202,8 @@ class Home(State):
             entities.Image(0,0, False, 1000, 600, "resources/background.png"),
             entities.ClickableImage(-20, 97, False, 180, 300, "resources/door.png"),
             entities.ClickableImage(10, 480, False, 135, 50, "resources/exit.png"),
-            entities.ClickableImage(10, 540, False, 135, 50, "resources/save.png")
+            entities.ClickableImage(10, 540, False, 135, 50, "resources/save.png"),
+            entities.ClickableImage(5, 5, False, 75, 75, "resources/arrowleft.png")
         ]
         
         # tips to show at the start
@@ -205,6 +243,14 @@ class Home(State):
         elif self.entities[3].isClicked:
             
             self.save()
+        
+        # when arrow pressed go to another room
+        
+        elif self.entities[4].isClicked:
+            
+            # change state to outside
+            Game.instance.currentState = PracticeRoom.instance
+            Game.instance.currentState.onSwitch()
     
     def onSwitch(self):
         # music
@@ -245,8 +291,92 @@ class Home(State):
                         
         Building.barberTime = int(time.time()) - globalAccess.saveDict["slept"] + globalAccess.saveDict["buildings"]["barber"]
         
+        PracticeRoom.instance.entities[3].level = globalAccess.saveDict["practice"]["hardiness"]
+        PracticeRoom.instance.entities[4].level = globalAccess.saveDict["practice"]["headsmarts"]
+        PracticeRoom.instance.entities[5].level = globalAccess.saveDict["practice"]["handsomeness"]
+        
         # save is now initialised
         self.saveInitialised = True
+
+class PracticeRoom(State):
+    
+    # singleton so instance
+    instance = None
+    
+    def init(self):
+        super().init()
+        
+        # entities
+        self.entities = [
+            entities.Image(0,0, False, 1000, 600, "resources/practiceroom.png"),
+            entities.ClickableImage(5, 5, False, 75, 75, "resources/arrowleft.png"),
+            entities.ClickableImage(920, 5, False, 75, 75, "resources/arrow.png"),
+            entities.Trophy(53, 208, False, 305, 268, "resources/treadmill.png"),
+            entities.Trophy(412, 154, False, 206, 332, "resources/bookshelf.png"),
+            entities.Trophy(798, 166, False, 144, 210, "resources/mirror.png"),
+            entities.ClickableImage(100, 100, False, 135, 50, "resources/upgrade.png"),
+            entities.ClickableImage(450, 100, False, 135, 50, "resources/upgrade.png"),
+            entities.ClickableImage(805, 100, False, 135, 50, "resources/upgrade.png"),
+        ]
+        
+    def update(self):
+        super().update()
+        
+        bought = 0
+        
+        if self.entities[1].isClicked:
+            
+            # change state to outside
+            Game.instance.currentState = TrophyRoom.instance
+            Game.instance.currentState.onSwitch()
+        elif self.entities[2].isClicked:
+            
+            # change state to outside
+            Game.instance.currentState = Home.instance
+            Game.instance.currentState.onSwitch()
+            
+        elif self.entities[6].isClicked:
+            
+            bought = 3
+        elif self.entities[7].isClicked:
+            
+            bought = 4
+        elif self.entities[8].isClicked:
+            
+            bought = 5
+            
+        if bought and (self.entities[bought].cost <= globalAccess.money):
+            globalAccess.kaching.play()
+            globalAccess.money -= self.entities[bought].cost
+            self.entities[bought].level += 1
+        elif bought:
+            globalAccess.womp.play()
+            self.entities.append(entities.Tip(f"not enough money\n(you have {globalAccess.money} dollars)"))
+
+class TrophyRoom(State):
+    
+    # singleton so instance
+    instance = None
+    
+    def init(self):
+        super().init()
+        
+        # entities
+        self.entities = [
+            entities.Image(0,0, False, 1000, 600, "resources/trophyroom.png"),
+            entities.ClickableImage(920, 5, False, 75, 75, "resources/arrow.png")
+        ]
+        
+        self.trophies = []
+        
+    def update(self):
+        super().update()
+        
+        if self.entities[1].isClicked:
+            
+            # change state to outside
+            Game.instance.currentState = PracticeRoom.instance
+            Game.instance.currentState.onSwitch()
         
 # walkable map
 class Outside(State):
@@ -261,12 +391,12 @@ class Outside(State):
         super().init()
         
         # initialise player
-        self.player = entities.Player(300,725)
+        self.player = entities.Player(300,725, 0,0,1900, 1200)
         
         # initialise entities
         self.entities = [
             
-            entities.RoamImage(0,0, False, 1900, 1200, "resources/background2.png"),
+            entities.RoamImage(-549,0, False, 3000, 1200, "resources/background2.png"),
             self.player,
             
             # houses
@@ -281,21 +411,23 @@ class Outside(State):
             entities.Door(300, 800, 100, 75, Home.instance),
             entities.Door(300, 325, 100, 75, Shop.commonInstance),
             entities.Door(600, 180, 100, 75, Shop.blackInstance),
+            entities.Door(1200, 945, 100, 75, Shop.milkInstance),
             entities.Door(900, 325, 100, 75, Shop.vetInstance),
             entities.Door(1500, 325, 100, 75, Building.gymInstance),
             entities.Door(1500, 800, 100, 75, Building.schoolInstance),
             entities.Door(900, 800, 100, 75, Building.barberInstance),
+            entities.Door(1898, 480, 20, 240, Path.instance),
             
-            # cats to collect
-            entities.Collectible(1780, 560, globalAccess.cats[0]),
-            entities.Collectible(620, 835, globalAccess.cats[1]),
-            entities.Collectible(1200, 1110, globalAccess.cats[2])
+            entities.Car(-600),
+            entities.Car(-800)
         ]
         
     
     def render(self):
         # make sure the back of the screen is black
-        Game.instance.screen.fill((0,0,0))
+        for x in range(1100//128):
+            for y in range(700//128):
+                globalAccess.seaImage.render(Game.instance.screen, (x*128, y*128))
         
         # get offset for camera stuff
         offsetX = self.player.x - Game.instance.SCREEN_WIDTH // 2 + self.player.width // 2
@@ -314,26 +446,15 @@ class Outside(State):
         pygame.mixer.music.load("resources/background2.mp3")
         pygame.mixer.music.play(-1,0.0)   
         self.player.image = pygame.image.load(self.player.imagePath)
+
+        # add entity as they might be back
         
-        # add entities as they might be back
+        for entity in self.entities:
+            if isinstance(entity, entities.Collectible):
+                self.entities.remove(entity)
         
-        # if there is a tip get it and remove it temporarily to handle the entities
-        tempTip = None
-        if isinstance(self.entities[-1], entities.Tip):
-            tempTip = self.entities[-1]
-            self.entities.pop()
-        
-        # add the collectibles
-        self.entities = self.entities[: 15]
-        self.entities += [
-            entities.Collectible(1780, 560, globalAccess.cats[0]),
-            entities.Collectible(620, 835, globalAccess.cats[1]),
-            entities.Collectible(1200, 1110, globalAccess.cats[2])
-        ]
-        
-        # add the tip back
-        if tempTip:
-            self.entities.append(tempTip)
+        self.entities.append(entities.Collectible(470, 715, globalAccess.cats[0]))            
+                
        
 
 # class for any particular building
@@ -418,7 +539,10 @@ class Building(State):
                 
                 # change the state
                 Game.instance.currentState = Outside.instance   
-                    
+                
+                # run state 
+                Game.instance.currentState.onSwitch()
+                
                 # append with tip about skill or money increase
                 Game.instance.currentState.entities.append(
                     entities.Tip(
@@ -428,8 +552,7 @@ class Building(State):
                     )
                 )
                 
-                # run state 
-                Game.instance.currentState.onSwitch()
+                
             
             return
                 
@@ -485,19 +608,29 @@ class Building(State):
             if cat.imagePath == Outside.instance.player.imagePath:
                 self.cat = cat
         
+        timeDict = {
+            "hardiness":Building.gymTime,
+            "headsmarts":Building.schoolTime,
+            "handsomeness":Building.barberTime
+        }
+        
         # if the time isnt right yet
-        if (self.stat == "hardiness" and Building.gymTime < 86400) or\
-            (self.stat == "headsmarts" and Building.schoolTime < 86400) or\
-            (self.stat == "handsomeness" and Building.barberTime < 86400):
+        if timeDict[self.stat] < 86400:
             
             # change state back to outside
             Game.instance.currentState = Outside.instance
             
-            # add tip
-            Game.instance.currentState.entities.append(entities.Tip("Not enough time has passed, try again later."))
-            
-            # switch now
+             # switch now
             Game.instance.currentState.onSwitch()
+            
+            # add tip
+            Game.instance.currentState.entities.append(
+                entities.Tip(
+                    f"you can access this building in {-((86400-timeDict[self.stat]) // -3600)} hours"
+                )
+            )
+            
+           
         
         
         self.init()
@@ -515,6 +648,7 @@ class Shop(State):
     commonInstance = None
     blackInstance = None
     vetInstance = None
+    milkInstance = None
 
     def __init__(self, entranceSay, purchaseSay, items, imagePath, musicPath):
         
@@ -523,7 +657,8 @@ class Shop(State):
         self.items = items
         self.imagePath = imagePath
         self.musicPath = musicPath
-        
+        print(items[0])
+
         super().__init__()
     
     def init(self):
@@ -701,8 +836,183 @@ Shop.vetInstance = Shop("You look sick may i suggest a lobotomy?", "thank you ki
 "resources/vetbackground.png", "resources/vetbackground.mp3"
 )
 
+Shop.milkInstance = Shop("...", "*a boney smile appears on his face*",
+    (
+        ("milk", 1000, 50, 75, "resources/milk.png", 100, 100, 100, -10, 100, 100, 100),
+        ("milk", 1000, 50, 75, "resources/milk.png", 100, 100, 100, -10, 100, 100, 100)
+    ),
+"resources/milkbackground.png", "resources/milkbackground.mp3"
+)
+
+class Path(State):
+    instance = None
+    player = None
+    
+    def init(self):
+        self.background = entities.RoamImage(0,0, False, 2818, 1200, "resources/path.png")
+        self.player = entities.Player(550,550, 529, 477, 2289, 723)
+        
+        self.entities = [self.background, self.player]
+        self.firstUpdate = True
+    
+    def update(self):
+        if self.firstUpdate:
+            self.entities.append(entities.Door(525, 0, 5, 1200, Outside.instance))
+            self.entities.append(entities.Door(2270, 0, 10, 1200, Maze.instance))
+            
+            self.firstUpdate = False
+            
+        super().update()
+    
+    def render(self):
+        # make sure the back of the screen is black
+        for x in range(1100//128):
+            for y in range(700//128):
+                globalAccess.seaImage.render(Game.instance.screen, (x*128, y*128))
+        
+        # get offset for camera stuff
+        offsetX = self.player.x - Game.instance.SCREEN_WIDTH // 2 + self.player.width // 2
+        offsetY = self.player.y - Game.instance.SCREEN_HEIGHT // 2 + self.player.height // 2
+        
+        # render entities but pass in offset for those that require it
+        for entity in self.entities:
+            try:    
+                entity.render(offsetX, offsetY)
+            except:
+                entity.render()
+    
+    def onSwitch(self):
+        # music
+        pygame.mixer.init()
+        pygame.mixer.music.load("resources/waterfall.mp3")
+        pygame.mixer.music.play(-1,0.0)    
+        
+        if Outside.instance.player.imagePath == "resources/icon.png":
+            # change state back to outside
+            Game.instance.currentState = Outside.instance
+            
+            # add tip
+            Game.instance.currentState.entities.append(entities.Tip("ONLY CATS PAST THIS LINE\nYou have no cat equipped, you silly billi!!\nclick a cat in your house to equip it"))
+            
+            # switch now
+            Game.instance.currentState.onSwitch()
+        else:
+            self.player.imagePath = Outside.instance.player.imagePath
+            self.player.image = pygame.image.load(self.player.imagePath)
+
+class Maze(State):
+    instance = None
+    player = None
+    
+    def init(self):
+        self.mazeMap = globalAccess.convert_image_to_2d_array(f"resources/maze{random.randint(1,7)}.png")
+        self.wall = pygame.image.load("resources/wall.png")
+        self.floor = pygame.image.load("resources/floor.png")
+        
+        self.firstUpdate = True
+        
+        self.player = entities.Player(25,1510, 0, 0, 3100, 3100)
+        
+        self.entities = [
+            self.player
+            
+        ]
+        
+        self.entities.append(entities.Clock(*self.getLoc()))
+        self.entities.append(entities.Ghost(*self.getLoc()))
+        
+        self.fog = []
+        self.currentFog = 0
+        
+        for i in range(10):
+            self.addItem()
+
+    def update(self):
+        if self.firstUpdate:
+            self.wall = self.wall.convert()
+            self.floor = self.floor.convert()
+            for i in range(8):
+                print(f"resources/fog{i+1}.png")
+                self.fog.append(pygame.image.load(f"resources/fog{i+1}.png").convert_alpha())
+                
+            
+            self.entities.append(entities.Door(5, 1500, 5, 100, Path.instance))
+            self.firstUpdate = False
+        
+        super().update()
+        
+
+    
+    def render(self):
+        if self.firstUpdate:
+            return
+        Game.instance.screen.fill((0, 0, 0))
+        
+        offsetX = self.player.x - Game.instance.SCREEN_WIDTH // 2 + self.player.width // 2
+        offsetY = self.player.y - Game.instance.SCREEN_HEIGHT // 2 + self.player.height // 2
+        
+        for i in range(31):
+            for j in range(31):
+                Game.instance.screen.blit(self.wall if self.mazeMap[i][j] else self.floor, (i*100 - offsetX, j*100 - offsetY))
+        
+        # render entities but pass in offset for those that require it
+        for entity in self.entities:
+            try:    
+                entity.render(offsetX, offsetY)
+            except:
+                entity.render()
+        
+
+        for x in range(1100//256):
+            for y in range(800//256):
+                Game.instance.screen.blit(self.fog[self.currentFog//10], (x*256, y*256))
+        
+        self.currentFog = self.currentFog + 1 if self.currentFog < 79 else 0
+        
+    
+    
+    def onSwitch(self):
+        # music
+        pygame.mixer.init()
+        pygame.mixer.music.load("resources/ghosts.mp3")
+        pygame.mixer.music.play(-1,0.0)       
+        
+        self.player.imagePath = Outside.instance.player.imagePath
+        self.player.image = pygame.image.load(self.player.imagePath)
+        
+        # add entities as they might be back
+        
+        for entity in self.entities:
+            if isinstance(entity, entities.Collectible):
+                self.entities.remove(entity)
+        
+        for i in range(3):
+            self.entities.append(entities.Collectible(*self.getLoc(), globalAccess.cats[i]))
+
+    
+    def getLoc(self):
+        while True:
+            x = random.randint(0, 30)
+            y = random.randint(0, 30)
+            
+            for entity in self.entities:
+                if not(self.mazeMap[x][y]) and not(entity.x == x*100+5 and entity.y == y*100+5) :
+                    return (x*100+5,y*100+5)
+    
+    def addItem(self):
+        self.entities.append(entities.CollectibleItem(*self.getLoc()))
+            
+        
+
+Maze.instance = Maze()
+
+
 # initialise normal instances
+Path.instance = Path()
 Home.instance = Home()
 Outside.instance = Outside()
 Main.instance = Main()
+TrophyRoom.instance = TrophyRoom()
+PracticeRoom.instance = PracticeRoom()
+
 
