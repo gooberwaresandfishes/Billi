@@ -13,6 +13,7 @@
 ## Features
 - Explore different buildings.
 - Upgrade skills and earn money.
+- Search for or buy items.
 - Take care of your cats.
 
 ## Save
