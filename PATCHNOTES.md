@@ -44,5 +44,5 @@ the purpose of this update is to give people a way to grind so they don't have t
 
 - works on mobile now
 - fixed maze wall glitch
-- fixed persistent car glitch
+- fixed persistent car and ghost glitch
 - final update
