@@ -983,6 +983,11 @@ class Maze(State):
         for entity in self.entities:
             if isinstance(entity, entities.Collectible):
                 self.entities.remove(entity)
+                
+            if isinstance(entity, entities.Ghost):
+                loc = self.getLoc()
+                entity.x = loc[0]
+                entity.y = loc[1]
         
         for i in range(3):
             self.entities.append(entities.Collectible(*self.getLoc(), globalAccess.cats[i]))
