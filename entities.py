@@ -420,8 +420,12 @@ class Cat(ClickableImage):
             return
             
         if health:
-            Game.instance.currentState.entities.append(Tip(f"You have {"lost" if health < 0 else "gained"} {abs(health)}\
-            health!\n you now have {self.health} health"))
+            if health < 0:
+                Game.instance.currentState.entities.append(
+            Tip(f"You have lost {-health} health!\n you now have {self.health} health"))
+            else:
+                Game.instance.currentState.entities.append(
+                Tip(f"You have gained {health} health!\n you now have {self.health} health"))
             
         if self.handsomeness >= 1000 and not("handsomeness" in states.TrophyRoom.instance.trophies):
             try:
@@ -845,12 +849,12 @@ class Car(Entity):
         self.x += self.xMove
         self.rectangle = pygame.Rect(self.x, self.y, self.width, self.height)
         
-        if self.rectangle.colliderect(Game.instance.currentState.player.rectangle):
+        if self.rectangle.colliderect(states.Outside.instance.player.rectangle):
             globalAccess.crash.play()
             Game.instance.currentState.entities.remove(self)
             Game.instance.currentState.entities.append(Car(self.ogX))
             for cat in states.Home.instance.ownedCats:
-                if cat.imagePath == Game.instance.currentState.player.imagePath:
+                if cat.imagePath == states.Outside.instance.player.imagePath:
                     cat.changeStats(-30,0,0,0,0,0,0)
         
         if self.x > 2500:

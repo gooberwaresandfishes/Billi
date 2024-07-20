@@ -71,7 +71,7 @@ def blitMultilineFont(rendered, screen, x, y, gap):
     for text in rendered: 
         screen.blit(text, (x, y + distance))
         distance += gap
-
+        
 # tips
 tips = [
     entities.Tip(
@@ -85,6 +85,7 @@ tips = [
         - Your objective is to take care of your cats.
         - Feed them items to maintain their stats.
         - Buy items from shops using money.
+        - Pick up collectibles around the map
         - Earn money by working in buildings.
         '''
     ),
@@ -92,15 +93,15 @@ tips = [
         '''
         CATS:
         - You start with 1 cat.
-        - There are 2 more to find, scattered in the map
+        - There are 2 more to find, scattered in the maze
         - Cat's stats decrease over time.
         - Hoariness means age and instead increases over time
-        - When you exit, your cats sleep
+        - When you exit or time travel, your cats sleep
         - When cats sleep they lose stats slower.
         - Low stats lead to health damage (or high hoariness)
         - Sleeping cats avoid health damage
         - If a cat reaches 0 health it dies
-        - dead cats respawn outside
+        - dead cats respawn outside or in the maze
         - Click a cat to check its condition.
         '''
     ),
@@ -114,7 +115,7 @@ tips = [
     entities.Tip(
         '''
         SHOPS:
-        - There are 3 shops in the map (one in the alley).
+        - There are 4 shops in the map (2 in the alley).
         - Visit shops to purchase items.
         - Simply walk into a shop and buy.
         '''
@@ -195,7 +196,5 @@ def convert_image_to_2d_array(image_path):
             # Assuming 0 is black and 255 is white
             row.append(1 if pixel == 0 else 0)
         binary_image.append(row)
-    
-    print(binary_image)
-    
+        
     return binary_image

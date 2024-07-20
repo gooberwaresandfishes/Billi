@@ -657,8 +657,7 @@ class Shop(State):
         self.items = items
         self.imagePath = imagePath
         self.musicPath = musicPath
-        print(items[0])
-
+        
         super().__init__()
     
     def init(self):
@@ -911,7 +910,7 @@ class Maze(State):
         
         self.firstUpdate = True
         
-        self.player = entities.Player(25,1510, 0, 0, 3100, 3100)
+        self.player = entities.Player(25,1510, 0, 0, 3099, 3099)
         
         self.entities = [
             self.player
@@ -932,7 +931,6 @@ class Maze(State):
             self.wall = self.wall.convert()
             self.floor = self.floor.convert()
             for i in range(8):
-                print(f"resources/fog{i+1}.png")
                 self.fog.append(pygame.image.load(f"resources/fog{i+1}.png").convert_alpha())
                 
             
