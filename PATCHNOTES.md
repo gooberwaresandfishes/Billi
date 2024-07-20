@@ -39,3 +39,10 @@ the purpose of this update is to give people a way to grind so they don't have t
 - moved collectibles to maze
 - added new collectibles
 - made the code messy whoops
+
+### v1.1.1 (12/7/24)
+
+- works on mobile now
+- fixed maze wall glitch
+- fixed persistent car glitch
+- final update
