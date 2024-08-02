@@ -2,9 +2,9 @@
 
 ## Setup
 - Extract the zip.
-- If you're on pc and have python, run main.py
-- If you're on pc and don't have python run main.exe (the exe might flag as a virus so you may need to add an exception to your antivirus).
-- If you're on mobile run main.py with Pydroid
+- If you're on windows get the windows version and run main.exe (the exe might flag as a virus so you may need to add an exception to your antivirus).
+- If you're on mobile get the mobile version and run main.py with Pydroid or equivalent
+- If you have python you can get the python version and run main.py
 
 ## Controls
 - Use WASD to move or press on sides of the screen.
