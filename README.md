@@ -26,3 +26,6 @@
 - MAKE SURE TO SAVE BEFORE EXITING.
 - Have fun exploring Billi!
 - I don't own like 99% of the assets in this game, don't sue me pls (i wrote all the code tho iirc)
+- Web version and Mobile version have animation removed.
+- Web version is kinda laggy, kinda my fault tho i used python.
+- Web version available on [itch.io](https://gooberwaresandfishes.itch.io/billi)
